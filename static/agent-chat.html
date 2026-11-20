@@ -72,6 +72,11 @@
         padding: 14px 16px 10px;
         border-bottom: 1px solid var(--line);
         background: var(--panel);
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        position: relative;
       }
       header h1 {
         margin: 0;
@@ -84,6 +89,79 @@
         color: var(--ink-soft);
         font-size: 16px;
       }
+
+      /* Corner mein chhota key icon — key lag jane ke baad sirf yehi dikhta hai */
+      .keybtn {
+        position: relative;
+        flex: none;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: var(--accent-soft);
+        color: var(--accent);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 2px;
+      }
+      .keybtn svg { width: 24px; height: 24px; }
+      .keybtn.off { opacity: 0.5; }
+      .hactions {
+        display: flex;
+        gap: 8px;
+        flex: none;
+      }
+      .keybtn .dot {
+        position: absolute;
+        right: 1px;
+        bottom: 1px;
+        border: 2px solid var(--panel);
+      }
+
+      /* Icon dabane par khulne wala chhota key box */
+      .keypop {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 12px;
+        width: min(340px, calc(100vw - 24px));
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+        padding: 14px;
+        z-index: 30;
+      }
+      .keypop h2 {
+        margin: 0 0 6px;
+        font-size: 18px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .keypop p {
+        margin: 0 0 10px;
+        color: var(--ink-soft);
+        font-size: 15px;
+      }
+      .keypop input {
+        width: 100%;
+        min-height: 50px;
+        font-size: 16px;
+        padding: 10px 12px;
+        border: 1.5px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel-2);
+        color: var(--ink);
+        margin-bottom: 10px;
+      }
+      .keypop input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+      .keypop .poprow {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .keypop .btn-save { min-height: 48px; font-size: 16px; padding: 8px 18px; }
 
       /* Key wala hissa */
       .keybox {
@@ -148,19 +226,6 @@
         background: transparent;
         color: var(--danger);
         border: 1.5px solid var(--danger);
-      }
-      .key-ok {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-      .key-ok .tick {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 700;
-        font-size: 17px;
       }
       .dot {
         width: 12px; height: 12px; border-radius: 50%;
@@ -267,16 +332,66 @@
         border-radius: 14px;
       }
       .btn-send:disabled { opacity: 0.45; cursor: not-allowed; }
+
+      /* Mic button — bol kar message bhejne ke liye */
+      .btn-mic {
+        min-height: 54px;
+        min-width: 54px;
+        border-radius: 14px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: none;
+      }
+      .btn-mic svg { width: 26px; height: 26px; }
+      .btn-mic:disabled { opacity: 0.45; cursor: not-allowed; }
+      .btn-mic.listening {
+        background: var(--danger);
+        color: #ffffff;
+        animation: micpulse 1.2s ease-in-out infinite;
+      }
+      @keyframes micpulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(179, 53, 43, 0.45); }
+        50% { box-shadow: 0 0 0 10px rgba(179, 53, 43, 0); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .btn-mic.listening { animation: none; }
+      }
     </style>
   </head>
   <body>
     <div class="app">
       <header>
-        <h1>Jarvis</h1>
-        <p>Salam! Main Jarvis hun. Mujh se Roman Urdu mein baat karo.</p>
+        <div>
+          <h1>Jarvis</h1>
+          <p>Salam! Main Jarvis hun. Mujh se Roman Urdu mein baat karo.</p>
+        </div>
+        <div class="hactions">
+          <!-- Speaker: Jarvis ke jawab ki awaz on/off -->
+          <button class="keybtn" id="speakBtn" type="button" aria-label="Awaz on hai — band karne ke liye dabao" title="Jarvis ki awaz on/off"></button>
+          <!-- Key lag jane ke baad sirf ye chhota icon dikhta hai -->
+          <button class="keybtn" id="keyIconBtn" type="button" hidden aria-label="Key lagi hui hai — key badalne ya hatane ke liye dabao" title="Key lagi hui hai — badalne ke liye dabao">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+            <span class="dot"></span>
+          </button>
+        </div>
+        <!-- Icon dabane par khulne wala chhota box -->
+        <div class="keypop" id="keyPop" hidden>
+          <h2><span class="dot"></span> Key lagi hui hai</h2>
+          <p>Key badalni ho to nayi key likh kar Save dabao. Key sirf is browser mein save hai.</p>
+          <input type="text" id="popKeyInput" placeholder="Apni key yahan lagao" autocomplete="off" autocapitalize="off" spellcheck="false" />
+          <div class="poprow">
+            <button class="btn-save" id="popSaveBtn" type="button">Key Save Karo</button>
+            <button class="btn-danger" id="popRemoveBtn" type="button">Key Hatao</button>
+            <button class="btn-ghost" id="popCloseBtn" type="button">Band Karo</button>
+          </div>
+          <div class="key-msg" id="popMsg"></div>
+        </div>
       </header>
 
-      <!-- Key lagane wala hissa -->
+      <!-- Key lagane wala hissa — sirf tab dikhta hai jab key lagi hui NA ho -->
       <section class="keybox" id="keyBox">
         <div id="keyForm">
           <h2>Pehle apni Gemini key lagao</h2>
@@ -286,14 +401,6 @@
             <button class="btn-save" id="saveKeyBtn" type="button">Key Save Karo</button>
           </div>
           <div class="key-msg" id="keyMsg"></div>
-        </div>
-        <div id="keySaved" hidden>
-          <div class="key-ok">
-            <span class="tick"><span class="dot"></span> Key lagi hui hai — chat tayyar hai</span>
-            <button class="btn-ghost" id="changeKeyBtn" type="button">Key Badlo</button>
-            <button class="btn-danger" id="removeKeyBtn" type="button">Key Hatao</button>
-          </div>
-          <p class="key-note">Key sirf is browser mein save hai. Hataane se chat band ho jaye gi.</p>
         </div>
       </section>
 
@@ -305,6 +412,9 @@
       <!-- Message likhne ki jagah -->
       <form class="composer" id="composer">
         <textarea id="msgInput" rows="1" placeholder="Message yahan likho..." disabled></textarea>
+        <button class="btn-mic" id="micBtn" type="button" disabled aria-label="Mic dabao aur bolo — awaz message ban jaye gi" title="Bol kar message bhejo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
         <button class="btn-send" id="sendBtn" type="submit" disabled>Bhejo</button>
       </form>
     </div>
@@ -314,23 +424,34 @@
         "use strict";
 
         var STORE_KEY = "jarvis_gemini_key";
-        var MODEL = "gemini-3-flash-preview";
-        var API_BASE = "https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent";
+        // Pehle model ki limit khatam ho to agla model khud try hota hai —
+        // har model ki Google limit alag hoti hai.
+        var MODELS = ["gemini-3-flash-preview", "gemini-2.5-flash", "gemini-2.5-flash-lite"];
+
+        function modelUrl(model) {
+          return "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent";
+        }
 
         var BASE_PROMPT = "You are Jarvis, a friendly assistant. Your name is Jarvis. Always reply ONLY in easy Roman Urdu, with short simple sentences. Never reply in English. Use only Roman/Latin letters (A-Z). Never use Urdu script or Hindi/Devanagari script. Example: user: 'Salam, tum kaun ho?' you: 'Salam! Main Jarvis hun, aap ka dostana assistant. Aap ki kya madad kar sakta hun?' Your name is Jarvis. The user name is separate from your name. If the user tells you their name, remember the USER name. When the user asks Mera naam kya hai, tell them THEIR name, not your name. When the user asks for the time, date, or 'kitne baje', you MUST call the get_time tool first, then tell the time from the tool result. Example: user: 'time kya hai?' you call get_time, then you: 'Abhi 9 baj kar 15 minute ho rahe hain.' Never guess the time. Never invent facts.";
 
         var chatEl = document.getElementById("chat");
-        var keyForm = document.getElementById("keyForm");
-        var keySaved = document.getElementById("keySaved");
+        var keyBox = document.getElementById("keyBox");
         var keyInput = document.getElementById("keyInput");
         var keyMsg = document.getElementById("keyMsg");
         var saveKeyBtn = document.getElementById("saveKeyBtn");
-        var changeKeyBtn = document.getElementById("changeKeyBtn");
-        var removeKeyBtn = document.getElementById("removeKeyBtn");
+        var keyIconBtn = document.getElementById("keyIconBtn");
+        var keyPop = document.getElementById("keyPop");
+        var popKeyInput = document.getElementById("popKeyInput");
+        var popSaveBtn = document.getElementById("popSaveBtn");
+        var popRemoveBtn = document.getElementById("popRemoveBtn");
+        var popCloseBtn = document.getElementById("popCloseBtn");
+        var popMsg = document.getElementById("popMsg");
         var noKeyWarn = document.getElementById("noKeyWarn");
         var composer = document.getElementById("composer");
         var msgInput = document.getElementById("msgInput");
         var sendBtn = document.getElementById("sendBtn");
+        var micBtn = document.getElementById("micBtn");
+        var speakBtn = document.getElementById("speakBtn");
 
         var history = []; // {role: "user"|"model", text: "..."}
         var busy = false;
@@ -345,14 +466,18 @@
           try { localStorage.removeItem(STORE_KEY); } catch (e) {}
         }
 
+        function closePop() { keyPop.hidden = true; }
+
         function refreshKeyUI() {
           var has = !!getKey();
-          keyForm.hidden = has;
-          keySaved.hidden = !has;
+          keyBox.hidden = has;          // key lag jaye to bara box gayab
+          keyIconBtn.hidden = !has;     // us ki jagah sirf chhota icon
+          if (!has) closePop();
           noKeyWarn.style.display = has ? "none" : "block";
           msgInput.disabled = !has || busy;
           sendBtn.disabled = !has || busy;
-          if (has) msgInput.focus();
+          micBtn.disabled = !has || busy;
+          if (has && keyPop.hidden) msgInput.focus();
         }
 
         function showKeyMsg(text, kind) {
@@ -378,18 +503,42 @@
           if (e.key === "Enter") { e.preventDefault(); saveKeyBtn.click(); }
         });
 
-        changeKeyBtn.addEventListener("click", function () {
-          keyForm.hidden = false;
-          keySaved.hidden = true;
-          keyInput.value = getKey();
-          keyInput.type = "text";
-          keyInput.focus();
-          keyInput.select();
+        function openPop() {
+          popKeyInput.value = getKey();
+          popMsg.className = "key-msg";
+          popMsg.textContent = "";
+          keyPop.hidden = false;
+          popKeyInput.focus();
+          popKeyInput.select();
+        }
+
+        keyIconBtn.addEventListener("click", function () {
+          if (keyPop.hidden) openPop(); else closePop();
         });
 
-        removeKeyBtn.addEventListener("click", function () {
+        popCloseBtn.addEventListener("click", closePop);
+
+        popSaveBtn.addEventListener("click", function () {
+          var k = popKeyInput.value.trim();
+          if (!k) {
+            popMsg.textContent = "Pehle nayi key likho, phir Save dabao.";
+            popMsg.className = "key-msg err";
+            popKeyInput.focus();
+            return;
+          }
+          setKey(k);
+          closePop();
+          refreshKeyUI();
+        });
+
+        popKeyInput.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") { e.preventDefault(); popSaveBtn.click(); }
+        });
+
+        popRemoveBtn.addEventListener("click", function () {
           clearKey();
           keyInput.value = "";
+          closePop();
           refreshKeyUI();
           keyInput.focus();
         });
@@ -428,22 +577,35 @@
             ". When the user asks for the time or date, answer from this given time. Never guess.";
         }
 
-        function sendToGemini(userText) {
-          var key = getKey();
-          var contents = [];
-          var recent = history.slice(-20); // aakhri 10 turns (har turn = user + jawab)
-          for (var i = 0; i < recent.length; i++) {
-            contents.push({ role: recent[i].role, parts: [{ text: recent[i].text }] });
-          }
-          contents.push({ role: "user", parts: [{ text: userText }] });
+        function wait(ms) {
+          return new Promise(function (resolve) { setTimeout(resolve, ms); });
+        }
 
+        // Google 429 ke jawab mein kabhi kabhi batata hai ke kitni dair rukna hai
+        // (RetryInfo / retryDelay). Wahi waqt istemal karo, warna apna andaza.
+        function retryDelayMs(data, fallbackMs) {
+          try {
+            var details = (data && data.error && data.error.details) || [];
+            for (var i = 0; i < details.length; i++) {
+              var d = details[i];
+              if (d && d.retryDelay) {
+                var secs = parseFloat(d.retryDelay);
+                if (!isNaN(secs) && secs > 0) {
+                  return Math.min(Math.max(Math.round(secs * 1000), 3000), 45000);
+                }
+              }
+            }
+          } catch (e) {}
+          return fallbackMs;
+        }
+
+        function callModel(model, key, contents) {
           var body = {
             system_instruction: { parts: [{ text: buildSystemPrompt() }] },
             contents: contents,
-            generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+            generationConfig: { temperature: 0.7, maxOutputTokens: 512 }
           };
-
-          return fetch(API_BASE, {
+          return fetch(modelUrl(model), {
             method: "POST",
             headers: { "Content-Type": "application/json", "x-goog-api-key": key },
             body: JSON.stringify(body)
@@ -454,6 +616,7 @@
                 var err = new Error(em || ("HTTP " + res.status));
                 err.status = res.status;
                 err.raw = em;
+                if (res.status === 429) err.retryMs = retryDelayMs(data, 0);
                 throw err;
               }
               var cand = data && data.candidates && data.candidates[0];
@@ -469,17 +632,47 @@
           });
         }
 
-        composer.addEventListener("submit", function (e) {
-          e.preventDefault();
+        // Aik message bhejna: limit (429) ya net ka masla aaye to haar nahi
+        // manni — ruk kar dobara koshish, phir agla model. Sirf tab error jab
+        // sab koshishein nakam ho jayein.
+        function sendToGemini(userText, onRetry) {
+          var key = getKey();
+          var contents = [];
+          var recent = history.slice(-10); // aakhri 5 turns — halki history, limit kam lagti hai
+          for (var i = 0; i < recent.length; i++) {
+            contents.push({ role: recent[i].role, parts: [{ text: recent[i].text }] });
+          }
+          contents.push({ role: "user", parts: [{ text: userText }] });
+
+          var backoff = [4000, 9000, 16000];
+
+          function attempt(modelIdx, tryIdx) {
+            return callModel(MODELS[modelIdx], key, contents).catch(function (err) {
+              var st = err && err.status;
+              var retryable = (st === 429 || st === 500 || st === 502 || st === 503 || !st);
+              if (!retryable) throw err;
+              if (tryIdx < backoff.length) {
+                if (onRetry) onRetry();
+                var delay = (st === 429 && err.retryMs) ? err.retryMs : backoff[tryIdx];
+                return wait(delay).then(function () { return attempt(modelIdx, tryIdx + 1); });
+              }
+              if (modelIdx < MODELS.length - 1) {
+                if (onRetry) onRetry();
+                return wait(1500).then(function () { return attempt(modelIdx + 1, 0); });
+              }
+              throw err;
+            });
+          }
+          return attempt(0, 0);
+        }
+
+        // Aik message bhejna — likh kar ho ya bol kar, raasta yehi hai
+        function sendMessage(text) {
           if (busy) return;
-          var text = msgInput.value.trim();
-          if (!text) return;
           if (!getKey()) {
             addBubble("Pehle upar apni key lagao, phir baat ho gi.", "error");
             return;
           }
-          msgInput.value = "";
-          msgInput.style.height = "auto";
           addBubble(text, "user");
           history.push({ role: "user", text: text });
 
@@ -487,11 +680,18 @@
           refreshKeyUI();
           var typing = addBubble("Jarvis likh raha hai...", "bot typing");
 
-          sendToGemini(text).then(function (reply) {
+          var retried = false;
+          sendToGemini(text, function () {
+            if (!retried) {
+              retried = true;
+              typing.textContent = "Line busy hai — Jarvis dobara koshish kar raha hai, bas thora intezaar karo...";
+            }
+          }).then(function (reply) {
             typing.remove();
             if (!reply) reply = "Samajh nahi aaya. Dobara likh kar bhejo.";
             addBubble(reply, "bot");
             history.push({ role: "model", text: reply });
+            speak(reply);
           }).catch(function (err) {
             typing.remove();
             history.pop(); // nakam koshish history mein na rakho
@@ -501,7 +701,7 @@
             } else if (err && err.status === 403) {
               msg = "Google ne jawab rok diya. Key check karo, ya thori dair baad dobara koshish karo.";
             } else if (err && err.status === 429) {
-              msg = "Bahut zyada messages ho gaye hain. Thora ruko, phir dobara bhejo.";
+              msg = "Google ki muft wali had abhi bhi lagi hui hai — maine kai dafa dobara koshish ki. Aik minute ruk kar apna message dobara bhej do, chat band nahi hui.";
             } else {
               msg = "Masla aa gaya — net band hai ya Google jawab nahi de raha. Thori dair baad dobara koshish karo.";
             }
@@ -510,6 +710,109 @@
             busy = false;
             refreshKeyUI();
           });
+        }
+
+        composer.addEventListener("submit", function (e) {
+          e.preventDefault();
+          var text = msgInput.value.trim();
+          if (!text) return;
+          msgInput.value = "";
+          msgInput.style.height = "auto";
+          sendMessage(text);
+        });
+
+        /* ---------- Awaz: jawab sunna (speaker) ---------- */
+        var voiceOn = true;
+        var ICON_SPK_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>';
+        var ICON_SPK_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>';
+
+        function refreshSpeakBtn() {
+          speakBtn.innerHTML = voiceOn ? ICON_SPK_ON : ICON_SPK_OFF;
+          speakBtn.classList.toggle("off", !voiceOn);
+          speakBtn.setAttribute("aria-label", voiceOn ? "Awaz on hai — band karne ke liye dabao" : "Awaz band hai — on karne ke liye dabao");
+        }
+
+        speakBtn.addEventListener("click", function () {
+          voiceOn = !voiceOn;
+          if (!voiceOn && "speechSynthesis" in window) {
+            try { speechSynthesis.cancel(); } catch (e) {}
+          }
+          refreshSpeakBtn();
+        });
+
+        function speak(text) {
+          if (!voiceOn || !("speechSynthesis" in window)) return;
+          try {
+            speechSynthesis.cancel();
+            var u = new SpeechSynthesisUtterance(text);
+            u.lang = "ur-PK";
+            var voices = speechSynthesis.getVoices();
+            for (var i = 0; i < voices.length; i++) {
+              if (voices[i].lang && voices[i].lang.toLowerCase().indexOf("ur") === 0) { u.voice = voices[i]; break; }
+            }
+            u.rate = 1;
+            speechSynthesis.speak(u);
+          } catch (e) {}
+        }
+        if ("speechSynthesis" in window) {
+          try { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = function () { try { speechSynthesis.getVoices(); } catch (e) {} }; } catch (e) {}
+        }
+
+        /* ---------- Awaz: bol kar message bhejna (mic) ---------- */
+        var recog = null;
+        var listening = false;
+
+        micBtn.addEventListener("click", function () {
+          if (listening) { if (recog) { try { recog.stop(); } catch (e) {} } return; }
+          if (!getKey()) {
+            addBubble("Pehle upar apni key lagao, phir baat ho gi.", "error");
+            return;
+          }
+          var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+          if (!SR) {
+            addBubble("Is browser mein awaz se baat nahi hoti. Page Chrome browser mein kholo, ya likh kar message bhejo.", "error");
+            return;
+          }
+          if ("speechSynthesis" in window) { try { speechSynthesis.cancel(); } catch (e) {} }
+
+          recog = new SR();
+          recog.lang = "ur-PK";
+          recog.interimResults = true;
+          recog.maxAlternatives = 1;
+          var finalText = msgInput.value.trim() ? msgInput.value.trim() + " " : "";
+
+          recog.onstart = function () {
+            listening = true;
+            micBtn.classList.add("listening");
+            msgInput.placeholder = "Sun raha hun... bolo";
+          };
+          recog.onresult = function (ev) {
+            var interim = "";
+            for (var i = ev.resultIndex; i < ev.results.length; i++) {
+              if (ev.results[i].isFinal) finalText += ev.results[i][0].transcript;
+              else interim += ev.results[i][0].transcript;
+            }
+            msgInput.value = (finalText + interim).trim();
+          };
+          recog.onerror = function (ev) {
+            if (ev.error === "not-allowed" || ev.error === "service-not-allowed") {
+              addBubble("Mic ki ijazat nahi mili. Browser ki settings mein ja kar is page ko mic ki ijazat do, phir mic dobara dabao.", "error");
+            } else if (ev.error === "no-speech") {
+              addBubble("Awaz sunai nahi di. Mic dabao aur thora zor se bolo.", "error");
+            } else if (ev.error !== "aborted") {
+              addBubble("Awaz samajhne mein masla aa gaya. Dobara koshish karo, ya likh kar bhejo.", "error");
+            }
+          };
+          recog.onend = function () {
+            listening = false;
+            micBtn.classList.remove("listening");
+            msgInput.placeholder = "Message yahan likho...";
+            var t = (finalText || "").trim();
+            msgInput.value = "";
+            msgInput.style.height = "auto";
+            if (t) sendMessage(t);
+          };
+          try { recog.start(); } catch (e) {}
         });
 
         msgInput.addEventListener("keydown", function (e) {
@@ -524,7 +827,8 @@
         });
 
         // Pehla salaam
-        addBubble("Salam! Main Jarvis hun. Apna message likho, main jawab dunga.", "bot");
+        addBubble("Salam! Main Jarvis hun. Message likho, ya mic wala button daba kar bolo — main jawab dunga.", "bot");
+        refreshSpeakBtn();
         refreshKeyUI();
       })();
     </script>
