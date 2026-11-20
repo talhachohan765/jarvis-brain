@@ -26,7 +26,7 @@ from typing import AsyncIterator, Optional
 
 import httpx
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 log = logging.getLogger("jarvis-brain")
@@ -97,6 +97,17 @@ async def health():
 @app.get("/")
 async def root():
     return {"service": "jarvis-brain", "status": "ok"}
+
+
+@app.get("/agent")
+async def agent_page():
+    """Jarvis Agent Chat page — key wala chat page (static HTML).
+
+    Page browser se seedha Gemini ko call karta hai (key sirf user ke
+    browser ki localStorage mein). Brain sirf page ko serve karta hai;
+    jawab ke liye brain istemal nahi hota."""
+    path = os.path.join(os.path.dirname(__file__), "static", "agent-chat.html")
+    return FileResponse(path, media_type="text/html")
 
 
 @app.get("/v1/models")

@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="ur">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>Jarvis Agent Chat</title>
+    <style>
+      :root {
+        --bg: #f4f6f5;
+        --panel: #ffffff;
+        --panel-2: #eef2f0;
+        --ink: #14201c;
+        --ink-soft: #44554f;
+        --line: #d7e0dc;
+        --accent: #0e7a5f;
+        --accent-ink: #ffffff;
+        --accent-soft: #dcefe8;
+        --user-bubble: #0e7a5f;
+        --user-ink: #ffffff;
+        --bot-bubble: #ffffff;
+        --bot-ink: #14201c;
+        --warn-bg: #fdf3e0;
+        --warn-ink: #7a5410;
+        --warn-line: #ecd9a8;
+        --danger: #b3352b;
+        --shadow: 0 1px 3px rgba(20, 32, 28, 0.12);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0d1512;
+          --panel: #16211d;
+          --panel-2: #1b2823;
+          --ink: #e8f0ec;
+          --ink-soft: #a7bab2;
+          --line: #2b3d36;
+          --accent: #2fae8a;
+          --accent-ink: #08130f;
+          --accent-soft: #173a30;
+          --user-bubble: #2fae8a;
+          --user-ink: #08130f;
+          --bot-bubble: #1b2823;
+          --bot-ink: #e8f0ec;
+          --warn-bg: #33290f;
+          --warn-ink: #f0d48a;
+          --warn-line: #5c4c1c;
+          --danger: #e08a82;
+          --shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+        }
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+        font-size: 18px;
+        line-height: 1.5;
+      }
+      .app {
+        display: flex;
+        flex-direction: column;
+        height: 100dvh;
+        max-width: 760px;
+        margin: 0 auto;
+      }
+
+      /* Upar wala hissa */
+      header {
+        padding: 14px 16px 10px;
+        border-bottom: 1px solid var(--line);
+        background: var(--panel);
+      }
+      header h1 {
+        margin: 0;
+        font-size: 30px;
+        font-weight: 800;
+        letter-spacing: 0.2px;
+      }
+      header p {
+        margin: 2px 0 0;
+        color: var(--ink-soft);
+        font-size: 16px;
+      }
+
+      /* Key wala hissa */
+      .keybox {
+        margin: 12px 12px 0;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 14px;
+        box-shadow: var(--shadow);
+      }
+      .keybox h2 {
+        margin: 0 0 6px;
+        font-size: 19px;
+        font-weight: 700;
+      }
+      .keybox p {
+        margin: 0 0 10px;
+        color: var(--ink-soft);
+        font-size: 16px;
+      }
+      .keyrow {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .keyrow input {
+        flex: 1 1 200px;
+        min-height: 52px;
+        font-size: 17px;
+        padding: 10px 12px;
+        border: 1.5px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel-2);
+        color: var(--ink);
+      }
+      .keyrow input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+      button {
+        font-family: inherit;
+        cursor: pointer;
+        border: none;
+        border-radius: 10px;
+        font-weight: 700;
+      }
+      .btn-save {
+        min-height: 52px;
+        padding: 10px 22px;
+        font-size: 18px;
+        background: var(--accent);
+        color: var(--accent-ink);
+      }
+      .btn-ghost {
+        min-height: 48px;
+        padding: 8px 16px;
+        font-size: 16px;
+        background: var(--accent-soft);
+        color: var(--ink);
+      }
+      .btn-danger {
+        min-height: 48px;
+        padding: 8px 16px;
+        font-size: 16px;
+        background: transparent;
+        color: var(--danger);
+        border: 1.5px solid var(--danger);
+      }
+      .key-ok {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .key-ok .tick {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+        font-size: 17px;
+      }
+      .dot {
+        width: 12px; height: 12px; border-radius: 50%;
+        background: var(--accent); flex: none;
+      }
+      .key-note { font-size: 15px; color: var(--ink-soft); margin-top: 8px; }
+      .key-msg {
+        margin-top: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        display: none;
+      }
+      .key-msg.err { color: var(--danger); display: block; }
+      .key-msg.good { color: var(--accent); display: block; }
+
+      .warn {
+        margin: 12px 12px 0;
+        background: var(--warn-bg);
+        color: var(--warn-ink);
+        border: 1px solid var(--warn-line);
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-size: 17px;
+        font-weight: 600;
+      }
+
+      /* Chat wala hissa */
+      .chat {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px 12px 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .msg {
+        max-width: 86%;
+        padding: 12px 15px;
+        border-radius: 18px;
+        font-size: 19px;
+        line-height: 1.55;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        box-shadow: var(--shadow);
+      }
+      .msg.bot {
+        align-self: flex-start;
+        background: var(--bot-bubble);
+        color: var(--bot-ink);
+        border: 1px solid var(--line);
+        border-bottom-left-radius: 6px;
+      }
+      .msg.user {
+        align-self: flex-end;
+        background: var(--user-bubble);
+        color: var(--user-ink);
+        border-bottom-right-radius: 6px;
+      }
+      .msg.typing {
+        color: var(--ink-soft);
+        font-style: italic;
+      }
+      .msg.error {
+        align-self: flex-start;
+        background: var(--warn-bg);
+        color: var(--warn-ink);
+        border: 1px solid var(--warn-line);
+        font-size: 17px;
+      }
+
+      /* Neeche likhne wala hissa */
+      .composer {
+        border-top: 1px solid var(--line);
+        background: var(--panel);
+        padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+      }
+      .composer textarea {
+        flex: 1;
+        font-family: inherit;
+        font-size: 19px;
+        line-height: 1.4;
+        padding: 12px 14px;
+        border: 1.5px solid var(--line);
+        border-radius: 14px;
+        background: var(--panel-2);
+        color: var(--ink);
+        resize: none;
+        max-height: 130px;
+        min-height: 54px;
+      }
+      .composer textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+      .composer textarea:disabled { opacity: 0.55; }
+      .btn-send {
+        min-height: 54px;
+        min-width: 96px;
+        padding: 10px 20px;
+        font-size: 19px;
+        background: var(--accent);
+        color: var(--accent-ink);
+        border-radius: 14px;
+      }
+      .btn-send:disabled { opacity: 0.45; cursor: not-allowed; }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <h1>Jarvis</h1>
+        <p>Salam! Main Jarvis hun. Mujh se Roman Urdu mein baat karo.</p>
+      </header>
+
+      <!-- Key lagane wala hissa -->
+      <section class="keybox" id="keyBox">
+        <div id="keyForm">
+          <h2>Pehle apni Gemini key lagao</h2>
+          <p>Ye key Google AI Studio se muft banti hai aur <b>AIza</b> se shuru hoti hai. Key sirf tumhare apne phone ke browser mein save ho gi — kahin aur nahi jaye gi.</p>
+          <div class="keyrow">
+            <input type="password" id="keyInput" placeholder="AIza... wali key yahan lagao" autocomplete="off" autocapitalize="off" spellcheck="false" />
+            <button class="btn-save" id="saveKeyBtn" type="button">Key Save Karo</button>
+          </div>
+          <div class="key-msg" id="keyMsg"></div>
+        </div>
+        <div id="keySaved" hidden>
+          <div class="key-ok">
+            <span class="tick"><span class="dot"></span> Key lagi hui hai — chat tayyar hai</span>
+            <button class="btn-ghost" id="changeKeyBtn" type="button">Key Badlo</button>
+            <button class="btn-danger" id="removeKeyBtn" type="button">Key Hatao</button>
+          </div>
+          <p class="key-note">Key sirf is browser mein save hai. Hataane se chat band ho jaye gi.</p>
+        </div>
+      </section>
+
+      <div class="warn" id="noKeyWarn">Chat abhi band hai. Pehle upar apni key lagao, phir baat ho gi.</div>
+
+      <!-- Chat -->
+      <main class="chat" id="chat"></main>
+
+      <!-- Message likhne ki jagah -->
+      <form class="composer" id="composer">
+        <textarea id="msgInput" rows="1" placeholder="Message yahan likho..." disabled></textarea>
+        <button class="btn-send" id="sendBtn" type="submit" disabled>Bhejo</button>
+      </form>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        var STORE_KEY = "jarvis_gemini_key";
+        var MODEL = "gemini-3-flash-preview";
+        var API_BASE = "https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent";
+
+        var BASE_PROMPT = "You are Jarvis, a friendly assistant. Your name is Jarvis. Always reply ONLY in easy Roman Urdu, with short simple sentences. Never reply in English. Use only Roman/Latin letters (A-Z). Never use Urdu script or Hindi/Devanagari script. Example: user: 'Salam, tum kaun ho?' you: 'Salam! Main Jarvis hun, aap ka dostana assistant. Aap ki kya madad kar sakta hun?' Your name is Jarvis. The user name is separate from your name. If the user tells you their name, remember the USER name. When the user asks Mera naam kya hai, tell them THEIR name, not your name. When the user asks for the time, date, or 'kitne baje', you MUST call the get_time tool first, then tell the time from the tool result. Example: user: 'time kya hai?' you call get_time, then you: 'Abhi 9 baj kar 15 minute ho rahe hain.' Never guess the time. Never invent facts.";
+
+        var chatEl = document.getElementById("chat");
+        var keyForm = document.getElementById("keyForm");
+        var keySaved = document.getElementById("keySaved");
+        var keyInput = document.getElementById("keyInput");
+        var keyMsg = document.getElementById("keyMsg");
+        var saveKeyBtn = document.getElementById("saveKeyBtn");
+        var changeKeyBtn = document.getElementById("changeKeyBtn");
+        var removeKeyBtn = document.getElementById("removeKeyBtn");
+        var noKeyWarn = document.getElementById("noKeyWarn");
+        var composer = document.getElementById("composer");
+        var msgInput = document.getElementById("msgInput");
+        var sendBtn = document.getElementById("sendBtn");
+
+        var history = []; // {role: "user"|"model", text: "..."}
+        var busy = false;
+
+        function getKey() {
+          try { return localStorage.getItem(STORE_KEY) || ""; } catch (e) { return ""; }
+        }
+        function setKey(k) {
+          try { localStorage.setItem(STORE_KEY, k); } catch (e) {}
+        }
+        function clearKey() {
+          try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+        }
+
+        function refreshKeyUI() {
+          var has = !!getKey();
+          keyForm.hidden = has;
+          keySaved.hidden = !has;
+          noKeyWarn.style.display = has ? "none" : "block";
+          msgInput.disabled = !has || busy;
+          sendBtn.disabled = !has || busy;
+          if (has) msgInput.focus();
+        }
+
+        function showKeyMsg(text, kind) {
+          keyMsg.textContent = text;
+          keyMsg.className = "key-msg " + kind;
+        }
+
+        saveKeyBtn.addEventListener("click", function () {
+          var k = keyInput.value.trim();
+          if (!k) {
+            showKeyMsg("Pehle key likho, phir Save dabao.", "err");
+            keyInput.focus();
+            return;
+          }
+          if (k.indexOf("AIza") !== 0) {
+            showKeyMsg("Ye key theek nahi lagti. Gemini ki key AIza se shuru hoti hai — dobara check karo.", "err");
+            keyInput.focus();
+            return;
+          }
+          setKey(k);
+          keyInput.value = "";
+          keyMsg.className = "key-msg";
+          keyMsg.textContent = "";
+          refreshKeyUI();
+        });
+
+        keyInput.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") { e.preventDefault(); saveKeyBtn.click(); }
+        });
+
+        changeKeyBtn.addEventListener("click", function () {
+          keyForm.hidden = false;
+          keySaved.hidden = true;
+          keyInput.value = getKey();
+          keyInput.type = "text";
+          keyInput.focus();
+          keyInput.select();
+        });
+
+        removeKeyBtn.addEventListener("click", function () {
+          clearKey();
+          keyInput.value = "";
+          refreshKeyUI();
+          keyInput.focus();
+        });
+
+        function addBubble(text, who) {
+          var div = document.createElement("div");
+          div.className = "msg " + who;
+          div.textContent = text;
+          chatEl.appendChild(div);
+          chatEl.scrollTop = chatEl.scrollHeight;
+          return div;
+        }
+
+        function karachiNowText() {
+          try {
+            var fmt = new Intl.DateTimeFormat("en-GB", {
+              timeZone: "Asia/Karachi",
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true
+            });
+            return fmt.format(new Date());
+          } catch (e) {
+            return new Date().toString();
+          }
+        }
+
+        function buildSystemPrompt() {
+          return BASE_PROMPT +
+            "\n\nNote: There is no get_time tool on this page. The current date and time in Pakistan (Asia/Karachi) is given to you right here: " +
+            karachiNowText() +
+            ". When the user asks for the time or date, answer from this given time. Never guess.";
+        }
+
+        function sendToGemini(userText) {
+          var key = getKey();
+          var contents = [];
+          var recent = history.slice(-20); // aakhri 10 turns (har turn = user + jawab)
+          for (var i = 0; i < recent.length; i++) {
+            contents.push({ role: recent[i].role, parts: [{ text: recent[i].text }] });
+          }
+          contents.push({ role: "user", parts: [{ text: userText }] });
+
+          var body = {
+            system_instruction: { parts: [{ text: buildSystemPrompt() }] },
+            contents: contents,
+            generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+          };
+
+          return fetch(API_BASE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+            body: JSON.stringify(body)
+          }).then(function (res) {
+            return res.json().catch(function () { return {}; }).then(function (data) {
+              if (!res.ok) {
+                var em = (data && data.error && data.error.message) || "";
+                var err = new Error(em || ("HTTP " + res.status));
+                err.status = res.status;
+                err.raw = em;
+                throw err;
+              }
+              var cand = data && data.candidates && data.candidates[0];
+              var parts = cand && cand.content && cand.content.parts;
+              var text = "";
+              if (parts) {
+                for (var j = 0; j < parts.length; j++) {
+                  if (parts[j].text) text += parts[j].text;
+                }
+              }
+              return text.trim();
+            });
+          });
+        }
+
+        composer.addEventListener("submit", function (e) {
+          e.preventDefault();
+          if (busy) return;
+          var text = msgInput.value.trim();
+          if (!text) return;
+          if (!getKey()) {
+            addBubble("Pehle upar apni key lagao, phir baat ho gi.", "error");
+            return;
+          }
+          msgInput.value = "";
+          msgInput.style.height = "auto";
+          addBubble(text, "user");
+          history.push({ role: "user", text: text });
+
+          busy = true;
+          refreshKeyUI();
+          var typing = addBubble("Jarvis likh raha hai...", "bot typing");
+
+          sendToGemini(text).then(function (reply) {
+            typing.remove();
+            if (!reply) reply = "Samajh nahi aaya. Dobara likh kar bhejo.";
+            addBubble(reply, "bot");
+            history.push({ role: "model", text: reply });
+          }).catch(function (err) {
+            typing.remove();
+            history.pop(); // nakam koshish history mein na rakho
+            var msg;
+            if (err && err.status === 400 && /API key not valid|API_KEY_INVALID/i.test(err.raw || "")) {
+              msg = "Key ghalat lag rahi hai. Upar se Key Badlo dabakar sahi key lagao.";
+            } else if (err && (err.status === 400 || err.status === 403)) {
+              msg = "Google ne jawab rok diya. Key check karo, ya thori dair baad dobara koshish karo.";
+            } else if (err && err.status === 429) {
+              msg = "Bahut zyada messages ho gaye hain. Thora ruko, phir dobara bhejo.";
+            } else {
+              msg = "Masla aa gaya — net band hai ya Google jawab nahi de raha. Thori dair baad dobara koshish karo.";
+            }
+            addBubble(msg, "error");
+          }).then(function () {
+            busy = false;
+            refreshKeyUI();
+          });
+        });
+
+        msgInput.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            if (!sendBtn.disabled) composer.requestSubmit();
+          }
+        });
+        msgInput.addEventListener("input", function () {
+          msgInput.style.height = "auto";
+          msgInput.style.height = Math.min(msgInput.scrollHeight, 130) + "px";
+        });
+
+        // Pehla salaam
+        addBubble("Salam! Main Jarvis hun. Apna message likho, main jawab dunga.", "bot");
+        refreshKeyUI();
+      })();
+    </script>
+  </body>
+</html>
