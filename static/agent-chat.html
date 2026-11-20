@@ -67,27 +67,22 @@
         margin: 0 auto;
       }
 
-      /* Upar wala hissa */
+      /* Upar wala hissa — sirf naam aur icon, taake chat ko zyada jagah mile */
       header {
-        padding: 14px 16px 10px;
+        padding: 8px 16px;
         border-bottom: 1px solid var(--line);
         background: var(--panel);
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
+        align-items: center;
         gap: 12px;
         position: relative;
       }
       header h1 {
         margin: 0;
-        font-size: 30px;
+        font-size: 24px;
         font-weight: 800;
         letter-spacing: 0.2px;
-      }
-      header p {
-        margin: 2px 0 0;
-        color: var(--ink-soft);
-        font-size: 16px;
       }
 
       /* Corner mein chhota key icon — key lag jane ke baad sirf yehi dikhta hai */
@@ -366,7 +361,6 @@
       <header>
         <div>
           <h1>Jarvis</h1>
-          <p>Salam! Main Jarvis hun. Mujh se Roman Urdu mein baat karo.</p>
         </div>
         <div class="hactions">
           <!-- Speaker: Jarvis ke jawab ki awaz on/off -->
@@ -425,8 +419,13 @@
 
         var STORE_KEY = "jarvis_gemini_key";
         // Pehle model ki limit khatam ho to agla model khud try hota hai —
-        // har model ki Google limit alag hoti hai.
-        var MODELS = ["gemini-3-flash-preview", "gemini-2.5-flash", "gemini-2.5-flash-lite"];
+        // har model ki Google limit alag hoti hai. (gemini-2.5-flash aur
+        // gemini-2.5-flash-lite 1 Dec 2026 ko band ho rahe hain, is liye
+        // un ki jagah 3.8 / 3.6 / 3.5-lite rakhe hain.)
+        var MODELS = ["gemini-3-flash-preview", "gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"];
+        // Kul koshishon ki had — is se zyada kabhi retry nahi hoga, taake
+        // "Line busy" wala bubble hamesha ke liye atak kar na reh jaye.
+        var MAX_ATTEMPTS = 3;
 
         function modelUrl(model) {
           return "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent";
@@ -591,7 +590,9 @@
               if (d && d.retryDelay) {
                 var secs = parseFloat(d.retryDelay);
                 if (!isNaN(secs) && secs > 0) {
-                  return Math.min(Math.max(Math.round(secs * 1000), 3000), 45000);
+                  // Google lamba waqt bhi bataye, hum 8 second se zyada
+                  // nahi rukenge — warna page "Line busy" par atak jata hai.
+                  return Math.min(Math.max(Math.round(secs * 1000), 2000), 8000);
                 }
               }
             }
@@ -605,17 +606,33 @@
             contents: contents,
             generationConfig: { temperature: 0.7, maxOutputTokens: 512 }
           };
-          return fetch(modelUrl(model), {
+          // Har koshish ki 30 second ki had — Google jawab na de to call
+          // khud band ho jaye gi, page "Line busy" par atak kar nahi rahe ga.
+          var ctrl = null;
+          var timer = null;
+          var opts = {
             method: "POST",
             headers: { "Content-Type": "application/json", "x-goog-api-key": key },
             body: JSON.stringify(body)
-          }).then(function (res) {
+          };
+          try {
+            if (typeof AbortController !== "undefined") {
+              ctrl = new AbortController();
+              opts.signal = ctrl.signal;
+              timer = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 30000);
+            }
+          } catch (e) {}
+          return fetch(modelUrl(model), opts).then(function (res) {
+            if (timer) clearTimeout(timer);
             return res.json().catch(function () { return {}; }).then(function (data) {
               if (!res.ok) {
                 var em = (data && data.error && data.error.message) || "";
                 var err = new Error(em || ("HTTP " + res.status));
                 err.status = res.status;
                 err.raw = em;
+                // 400 / 401 / 403 = key ghalat hai ya khatam ho gayi hai.
+                // Aisi ghalti par dobara koshish ka koi faida nahi.
+                if (res.status === 400 || res.status === 401 || res.status === 403) err.keyError = true;
                 if (res.status === 429) err.retryMs = retryDelayMs(data, 0);
                 throw err;
               }
@@ -632,9 +649,14 @@
           });
         }
 
-        // Aik message bhejna: limit (429) ya net ka masla aaye to haar nahi
-        // manni — ruk kar dobara koshish, phir agla model. Sirf tab error jab
-        // sab koshishein nakam ho jayein.
+        // Aik message bhejna — sakht usool:
+        // 1) 400 / 401 / 403 (key ghalat ya khatam) par KABHI dobara koshish
+        //    nahi — foran key wala message dikhe ga.
+        // 2) Sirf 429 (limit), 5xx (server) aur net ki ghalti par dobara
+        //    koshish hoti hai, aur kul koshishein zyada se zyada 3 hain —
+        //    har agli koshish agle model par (us ki limit alag hoti hai).
+        // 3) 3 koshishon ke baad hamesha aakhri saaf message aata hai —
+        //    "Line busy" wala bubble kabhi atak kar nahi rehta.
         function sendToGemini(userText, onRetry) {
           var key = getKey();
           var contents = [];
@@ -644,26 +666,24 @@
           }
           contents.push({ role: "user", parts: [{ text: userText }] });
 
-          var backoff = [4000, 9000, 16000];
+          var backoff = [2000, 4000]; // sirf 2 retry — kul 3 koshishein
 
-          function attempt(modelIdx, tryIdx) {
-            return callModel(MODELS[modelIdx], key, contents).catch(function (err) {
+          function attempt(n) { // n = 0, 1, 2 — kul MAX_ATTEMPTS koshishein
+            var model = MODELS[Math.min(n, MODELS.length - 1)];
+            return callModel(model, key, contents).catch(function (err) {
               var st = err && err.status;
-              var retryable = (st === 429 || st === 500 || st === 502 || st === 503 || !st);
+              // Key wali ghalti — dobara koshish band, foran bahir phenko
+              if (err && err.keyError) throw err;
+              if (st === 400 || st === 401 || st === 403 || st === 404) throw err;
+              var retryable = (st === 429 || (st >= 500 && st <= 599) || !st);
               if (!retryable) throw err;
-              if (tryIdx < backoff.length) {
-                if (onRetry) onRetry();
-                var delay = (st === 429 && err.retryMs) ? err.retryMs : backoff[tryIdx];
-                return wait(delay).then(function () { return attempt(modelIdx, tryIdx + 1); });
-              }
-              if (modelIdx < MODELS.length - 1) {
-                if (onRetry) onRetry();
-                return wait(1500).then(function () { return attempt(modelIdx + 1, 0); });
-              }
-              throw err;
+              if (n + 1 >= MAX_ATTEMPTS) throw err; // had khatam — aakhri message aye ga
+              if (onRetry) onRetry(n + 1);
+              var delay = (st === 429 && err.retryMs) ? err.retryMs : backoff[n];
+              return wait(delay).then(function () { return attempt(n + 1); });
             });
           }
-          return attempt(0, 0);
+          return attempt(0);
         }
 
         // Aik message bhejna — likh kar ho ya bol kar, raasta yehi hai
@@ -680,12 +700,8 @@
           refreshKeyUI();
           var typing = addBubble("Jarvis likh raha hai...", "bot typing");
 
-          var retried = false;
-          sendToGemini(text, function () {
-            if (!retried) {
-              retried = true;
-              typing.textContent = "Line busy hai — Jarvis dobara koshish kar raha hai, bas thora intezaar karo...";
-            }
+          sendToGemini(text, function (tryNo) {
+            typing.textContent = "Line busy hai — Jarvis dobara koshish kar raha hai (" + tryNo + "/3)...";
           }).then(function (reply) {
             typing.remove();
             if (!reply) reply = "Samajh nahi aaya. Dobara likh kar bhejo.";
@@ -696,14 +712,15 @@
             typing.remove();
             history.pop(); // nakam koshish history mein na rakho
             var msg;
-            if (err && err.status === 400) {
-              msg = "Ye key Google ne nahi mani — key dobara poori copy karke lagao.";
-            } else if (err && err.status === 403) {
-              msg = "Google ne jawab rok diya. Key check karo, ya thori dair baad dobara koshish karo.";
+            if (err && (err.keyError || err.status === 400 || err.status === 401 || err.status === 403)) {
+              // Key wali ghalti par koi retry nahi hua — ye message foran aata hai
+              msg = "Key khatam ho gayi ya ghalat hai — nayi key lagao. Upar key wale icon ko dabao, wahan nayi key lagane ka option hai.";
             } else if (err && err.status === 429) {
-              msg = "Google ki muft wali had abhi bhi lagi hui hai — maine kai dafa dobara koshish ki. Aik minute ruk kar apna message dobara bhej do, chat band nahi hui.";
+              msg = "Jawab nahi aaya — Google ki muft wali had (limit) khatam ho gayi hai. Maine 3 dafa koshish ki, teeno par limit lagi mili. Thori dair ruk kar message dobara bhejo, ya upar key wale icon se doosri key lagao. Chat band nahi hui.";
+            } else if (err && err.status >= 500 && err.status <= 599) {
+              msg = "Jawab nahi aaya — Google ke server par masla hai. Maine 3 dafa koshish ki. Thori dair baad apna message dobara bhej do, chat band nahi hui.";
             } else {
-              msg = "Masla aa gaya — net band hai ya Google jawab nahi de raha. Thori dair baad dobara koshish karo.";
+              msg = "Jawab nahi aaya — net ka masla lagta hai ya Google tak baat nahi pohanchi. Maine 3 dafa koshish ki. Apna net check karo aur message dobara bhejo, chat band nahi hui.";
             }
             addBubble(msg, "error");
           }).then(function () {
@@ -826,8 +843,8 @@
           msgInput.style.height = Math.min(msgInput.scrollHeight, 130) + "px";
         });
 
-        // Pehla salaam
-        addBubble("Salam! Main Jarvis hun. Message likho, ya mic wala button daba kar bolo — main jawab dunga.", "bot");
+        // Pehla chhota sa ishara — lamba salaam nahi, taake chat ko jagah mile
+        addBubble("Message likho, ya mic wala button daba kar bolo — main jawab dunga.", "bot");
         refreshSpeakBtn();
         refreshKeyUI();
       })();
